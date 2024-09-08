@@ -5,6 +5,7 @@ from date_utils import safe_date
 from operator import attrgetter
 import requests
 import re
+import os
 
 # https://edge.boi.gov.il/FusionEdgeServer/sdmx/v2/data/dataflow/BOI.STATISTICS/EXR/1.0/RER_USD_ILS?format=csv&startperiod=2022-01-01&endperiod=2022-12-31
 # https://edge.boi.gov.il/FusionEdgeServer/sdmx/v2/data/dataflow/BOI.STATISTICS/EXR/1.0/?c%5BDATA_TYPE%5D=OF00&startperiod=2008-01-01&endperiod=2008-01-02&format=csv
@@ -13,7 +14,7 @@ class UsdToIlsRatesProvider:
 
     def __init__(self, year: int):
         self.year = year
-        self.rates = UsdToIlsRatesProvider.get_dollar_to_shekel_rates_for_year(year)
+        self.rates = UsdToIlsRatesProvider.get_dollar_to_shekel_rates_for_year_local(year)
         # for rate in self.rates:
         #     print(rate)
 
@@ -29,6 +30,20 @@ class UsdToIlsRatesProvider:
             except (ValueError, AttributeError):
                 pass
         return rates
+
+    @classmethod
+    def get_dollar_to_shekel_rates_for_year_local(cls, year: int) -> { datetime.date:float }:
+        print(os.getcwd())
+        with open(f"rates/dollar_ils_{year}.csv", "r") as csvfile:
+            reader = csv.reader(csvfile)
+            rates = []
+            for row in reader:
+                try:
+                    rates.append([safe_date(row[12]).toordinal(), float(row[13])])
+                except (ValueError, AttributeError):
+                    pass
+            return rates
+
 
     def get_rate(self, date: datetime.date) -> float:
         by_year = attrgetter('released')
